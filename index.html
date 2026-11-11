@@ -99,11 +99,13 @@ main{padding-block:14px 40px;display:flex;flex-direction:column;gap:16px}
 .photo-actions label.btn{display:inline-flex;align-items:center}
 .card{background:var(--surface);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
 .card h3{margin:0;font:600 15px/1 var(--display);letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
-.stepper{display:flex;align-items:stretch;gap:10px}
-.stepper button{flex:none;width:58px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font:700 28px/1 var(--display)}
+.sets{display:flex;flex-direction:column;gap:8px}
+.stepper{display:flex;align-items:stretch;gap:8px}
+.setlab{flex:none;width:46px;align-self:center;font:600 15px/1 var(--display);letter-spacing:.04em;color:var(--muted)}
+.stepper button{flex:none;width:50px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font:700 28px/1 var(--display)}
 .stepper .field{flex:1;min-width:0;display:flex;align-items:baseline;justify-content:center;gap:6px;border:2px solid var(--line);border-radius:12px;padding:6px 10px;background:var(--bg)}
 .stepper .field:focus-within{border-color:var(--accent)}
-.stepper input{width:100%;min-width:0;border:0;background:transparent;text-align:right;font:700 44px/1.1 var(--display);font-variant-numeric:tabular-nums;outline:none}
+.stepper input{width:100%;min-width:0;border:0;background:transparent;text-align:right;font:700 32px/1.1 var(--display);font-variant-numeric:tabular-nums;outline:none}
 .stepper .unit{font-weight:600;color:var(--muted);flex:none;padding-right:8px}
 .saveline{display:flex;gap:10px;flex-wrap:wrap}
 .saveline input[type=date]{flex:1;min-width:140px;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:8px 10px;min-height:46px}
@@ -124,8 +126,8 @@ main{padding-block:14px 40px;display:flex;flex-direction:column;gap:16px}
 .hist{list-style:none;margin:0;padding:0}
 .hist li{display:flex;align-items:center;gap:10px;border-top:1px solid var(--line);padding:6px 0;font-variant-numeric:tabular-nums}
 .hist li:first-child{border-top:0}
-.hist .dt{flex:1;color:var(--muted);font-size:14px}
-.hist .w{font-weight:600;min-width:72px;text-align:right}
+.hist .dt{flex:1;min-width:0;color:var(--muted);font-size:13px;display:flex;flex-direction:column;gap:1px}
+.hist .dt b{color:var(--ink);font-size:16px;font-weight:600}
 .hist .delta{min-width:62px;text-align:right}
 .hist button{border:0;background:transparent;color:var(--muted);width:36px;height:36px;border-radius:8px;font-size:18px}
 textarea,.txt,select{width:100%;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:10px;min-height:46px}
@@ -188,15 +190,30 @@ dialog p{margin:0;font-size:14px;color:var(--muted)}
     </div>
 
     <section class="card">
-      <h3>Aktuelles Trainingsgewicht</h3>
+      <h3>Trainingsgewicht pro Satz</h3>
+      <div class="sets" id="sets">
       <div class="stepper">
-        <button type="button" id="minus" aria-label="2,5 kg weniger">−</button>
-        <div class="field"><input id="weight" inputmode="decimal" autocomplete="off" placeholder="0" aria-label="Gewicht in Kilogramm"><span class="unit">kg</span></div>
-        <button type="button" id="plus" aria-label="2,5 kg mehr">+</button>
+        <span class="setlab">Satz 1</span>
+        <button type="button" data-i="0" data-s="-2.5" aria-label="Satz 1: 2,5 kg weniger">−</button>
+        <div class="field"><input id="w0" inputmode="decimal" autocomplete="off" placeholder="0" aria-label="Satz 1, Gewicht in Kilogramm"><span class="unit">kg</span></div>
+        <button type="button" data-i="0" data-s="2.5" aria-label="Satz 1: 2,5 kg mehr">+</button>
+      </div>
+      <div class="stepper">
+        <span class="setlab">Satz 2</span>
+        <button type="button" data-i="1" data-s="-2.5" aria-label="Satz 2: 2,5 kg weniger">−</button>
+        <div class="field"><input id="w1" inputmode="decimal" autocomplete="off" placeholder="0" aria-label="Satz 2, Gewicht in Kilogramm"><span class="unit">kg</span></div>
+        <button type="button" data-i="1" data-s="2.5" aria-label="Satz 2: 2,5 kg mehr">+</button>
+      </div>
+      <div class="stepper">
+        <span class="setlab">Satz 3</span>
+        <button type="button" data-i="2" data-s="-2.5" aria-label="Satz 3: 2,5 kg weniger">−</button>
+        <div class="field"><input id="w2" inputmode="decimal" autocomplete="off" placeholder="0" aria-label="Satz 3, Gewicht in Kilogramm"><span class="unit">kg</span></div>
+        <button type="button" data-i="2" data-s="2.5" aria-label="Satz 3: 2,5 kg mehr">+</button>
+      </div>
       </div>
       <div class="saveline">
         <input id="date" type="date" aria-label="Datum">
-        <button class="btn primary" id="save" type="button">Gewicht speichern</button>
+        <button class="btn primary" id="save" type="button">Sätze speichern</button>
       </div>
     </section>
 
@@ -204,6 +221,7 @@ dialog p{margin:0;font-size:14px;color:var(--muted)}
       <h3>Statistik</h3>
       <div class="stats" id="stats"></div>
       <div class="chart" id="chart"></div>
+      <p class="empty" id="statNote">Statistik und Kurve zeigen den schwersten Satz des Tages.</p>
     </section>
 
     <section class="card">
@@ -343,6 +361,8 @@ function num(n){return n.toLocaleString('de-DE',{maximumFractionDigits:2})}
 function signed(n){return (n>0?'+':n<0?'−':'±')+num(Math.abs(n))}
 function today(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)}
 function fmtDate(iso,long){return new Date(iso+'T00:00').toLocaleDateString('de-DE',long?{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'}:{day:'2-digit',month:'2-digit',year:'2-digit'})}
+function setsOf(e){return Array.isArray(e.s)&&e.s.length?e.s:[e.w]}
+function setsText(e){return setsOf(e).map(num).join(' · ')}
 function deltaHtml(d){
   if(d===null)return '';
   var c=d>0?'up':d<0?'down':'';
@@ -382,7 +402,7 @@ var view='list', calSel=today(), calY=+calSel.slice(0,4), calM=+calSel.slice(5,7
 function iso(y,m,d){return y+'-'+('0'+(m+1)).slice(-2)+'-'+('0'+d).slice(-2)}
 function renderCal(){
   var map={};
-  state.machines.forEach(function(m){m.log.forEach(function(e){(map[e.d]=map[e.d]||[]).push({m:m,w:e.w})})});
+  state.machines.forEach(function(m){m.log.forEach(function(e){(map[e.d]=map[e.d]||[]).push({m:m,w:e.w,s:setsOf(e)})})});
   var first=new Date(calY,calM,1),off=(first.getDay()+6)%7,days=new Date(calY,calM+1,0).getDate(),td=today(),n=0;
   $('calTitle').textContent=first.toLocaleDateString('de-DE',{month:'long',year:'numeric'});
   var h=['Mo','Di','Mi','Do','Fr','Sa','So'].map(function(w){return '<div class="cal-wd">'+w+'</div>'}).join('');
@@ -398,7 +418,7 @@ function renderCal(){
   $('calDayCount').textContent=list.length||'';
   $('calDay').innerHTML=list.length?'<div class="rows">'+list.map(function(x){
     var p=photo(x.m.id);
-    return '<button type="button" class="row" data-id="'+esc(x.m.id)+'"><span class="thumb">'+(p?'<img alt="" src="'+p+'">':illSvg(x.m.ill))+'</span><span class="name">'+esc(x.m.name)+'<small>'+esc(x.m.group)+'</small></span><span class="val"><span class="kg">'+num(x.w)+'<small>kg</small></span></span></button>';
+    return '<button type="button" class="row" data-id="'+esc(x.m.id)+'"><span class="thumb">'+(p?'<img alt="" src="'+p+'">':illSvg(x.m.ill))+'</span><span class="name">'+esc(x.m.name)+'<small>'+esc(x.m.group)+'</small></span><span class="val"><span class="kg">'+num(x.w)+'<small>kg</small></span>'+(x.s.length>1?'<span class="delta">'+x.s.map(num).join(' · ')+'</span>':'')+'</span></button>';
   }).join('')+'</div>':'<p class="empty">An diesem Tag ist keine Übung eingetragen.</p>';
 }
 function setView(v){
@@ -419,7 +439,8 @@ function openDetail(id){
   listScroll=window.scrollY; cur=id; delArmed=false;
   $('listView').hidden=true; $('detailView').hidden=false;
   var m=machine(); $('date').value=today(); $('date').max=today();
-  $('weight').value=m.log.length?num(m.log[m.log.length-1].w):'';
+  var ls=m.log.length?setsOf(m.log[m.log.length-1]):[];
+  [0,1,2].forEach(function(i){$('w'+i).value=ls.length===1?num(ls[0]):(i<ls.length?num(ls[i]):'')});
   $('note').value=m.note||''; $('delMachine').textContent='Gerät löschen';
   renderDetail(); window.scrollTo(0,0);
   try{location.hash='geraet'}catch(e){}
@@ -447,20 +468,26 @@ function renderDetail(){
   drawChart($('chart'),log);
   $('hist').innerHTML=n?log.slice().reverse().map(function(e,i){
     var idx=n-1-i;
-    return '<li><span class="dt">'+fmtDate(e.d,true)+'</span><span class="w">'+num(e.w)+' kg</span>'+(idx>0?deltaHtml(e.w-log[idx-1].w):'<span class="delta">Start</span>')+'<button type="button" data-d="'+e.d+'" aria-label="Eintrag vom '+fmtDate(e.d)+' löschen">×</button></li>';
+    return '<li><span class="dt">'+fmtDate(e.d,true)+'<b>'+setsText(e)+' kg</b></span>'+(idx>0?deltaHtml(e.w-log[idx-1].w):'<span class="delta">Start</span>')+'<button type="button" data-d="'+e.d+'" aria-label="Eintrag vom '+fmtDate(e.d)+' löschen">×</button></li>';
   }).join(''):'<li><p class="empty">Noch kein Eintrag. Trage oben dein Gewicht ein.</p></li>';
 }
-function readWeight(){var v=parseFloat(String($('weight').value).replace(',','.'));return isFinite(v)?v:NaN}
-function step(d){var v=readWeight(); if(isNaN(v))v=0; v=Math.max(0,Math.round((v+d)*100)/100); $('weight').value=num(v)}
-$('minus').onclick=function(){step(-2.5)}; $('plus').onclick=function(){step(2.5)};
+function readSet(i){var t=String($('w'+i).value).trim(); if(!t)return null; var v=parseFloat(t.replace(',','.')); return isFinite(v)?v:NaN}
+$('sets').onclick=function(e){
+  var b=e.target.closest('button'); if(!b)return;
+  var i=+b.dataset.i,v=readSet(i),prev=i>0?readSet(i-1):null;
+  if(v===null&&prev)v=prev;                       /* leerer Satz: Gewicht vom Satz davor übernehmen */
+  else v=Math.max(0,Math.round(((v||0)+ +b.dataset.s)*100)/100);
+  $('w'+i).value=num(v);
+};
 $('save').onclick=function(){
-  var m=machine(),w=readWeight(),d=$('date').value||today();
-  if(isNaN(w)||w<=0||w>999){toast('Bitte ein Gewicht zwischen 0 und 999 kg eintragen.');return}
+  var m=machine(),d=$('date').value||today(),vals=[0,1,2].map(readSet).filter(function(v){return v!==null});
+  if(!vals.length){toast('Bitte mindestens einen Satz eintragen.');return}
+  if(vals.some(function(v){return isNaN(v)||v<=0||v>999})){toast('Bitte Gewichte zwischen 0 und 999 kg eintragen.');return}
   if(d>today())d=today();
-  w=Math.round(w*100)/100;
-  var ex=m.log.filter(function(e){return e.d===d})[0];
-  if(ex)ex.w=w; else {m.log.push({d:d,w:w}); m.log.sort(function(a,b){return a.d<b.d?-1:1})}
-  persist(); renderDetail(); toast('Gespeichert: '+num(w)+' kg am '+fmtDate(d));
+  vals=vals.map(function(v){return Math.round(v*100)/100});
+  var w=Math.max.apply(null,vals),ex=m.log.filter(function(e){return e.d===d})[0];
+  if(ex){ex.w=w;ex.s=vals} else {m.log.push({d:d,w:w,s:vals}); m.log.sort(function(a,b){return a.d<b.d?-1:1})}
+  persist(); renderDetail(); toast('Gespeichert: '+vals.map(num).join(' · ')+' kg am '+fmtDate(d));
 };
 $('hist').onclick=function(e){
   var b=e.target.closest('button'); if(!b)return;
@@ -569,7 +596,9 @@ $('backupRestore').onclick=function(){
   if(!restoreArmed){restoreArmed=true;this.textContent='Aktuelle Daten ersetzen?';return}
   restoreArmed=false; this.textContent='Einspielen';
   state={v:1,machines:o.machines.map(function(m){return {id:m.id,name:m.name,group:GROUPS.indexOf(m.group)<0?GROUPS[9]:m.group,ill:m.ill,note:m.note||'',
-    log:m.log.filter(function(e){return e&&/^\d{4}-\d\d-\d\d$/.test(e.d)&&typeof e.w==='number'}).sort(function(a,b){return a.d<b.d?-1:1})}})};
+    log:m.log.filter(function(e){return e&&/^\d{4}-\d\d-\d\d$/.test(e.d)&&typeof e.w==='number'}).map(function(e){
+      var o={d:e.d,w:e.w},sv=Array.isArray(e.s)?e.s.filter(function(v){return typeof v==='number'&&v>0}).slice(0,3):[];
+      if(sv.length)o.s=sv; return o}).sort(function(a,b){return a.d<b.d?-1:1})}})};
   if(o.photos)Object.keys(o.photos).forEach(function(id){if(/^data:image\//.test(o.photos[id])&&store.set(PKEY+id,o.photos[id]))photos[id]=o.photos[id]});
   persist(); $('backupDlg').close(); renderList(); toast('Sicherung eingespielt');
 };
