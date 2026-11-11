@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1D5BD6">
+<!--HEAD-->
+<title>Trainingsgewichte</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap">
+<style>
+/* Layout: one phone column. Sticky header, machine list grouped by muscle group, detail view replaces the list. */
+:root{
+  --bg:#EEF1F4; --surface:#FFFFFF; --tile:#E1E7ED; --ink:#15202B; --muted:#586674; --line:#D3DAE1;
+  --frame:#8D9AA7; --accent:#1D5BD6; --accent-ink:#FFFFFF; --up:#1B7443; --down:#B4382C;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0F151B; --surface:#19222B; --tile:#23303B; --ink:#EAF0F5; --muted:#96A5B3; --line:#2B3843;
+  --frame:#66778A; --accent:#6AA5FF; --accent-ink:#0B1522; --up:#5CCB8B; --down:#FF8E7E; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0F151B; --surface:#19222B; --tile:#23303B; --ink:#EAF0F5; --muted:#96A5B3; --line:#2B3843;
+  --frame:#66778A; --accent:#6AA5FF; --accent-ink:#0B1522; --up:#5CCB8B; --down:#FF8E7E; color-scheme:dark }
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.4 var(--body);-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.wrap{max-width:640px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+header.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--bg);border-bottom:1px solid var(--line)}
+header.bar .wrap{display:flex;align-items:center;gap:8px;min-height:56px}
+header.bar h1{flex:1;min-width:0;margin:0;font:700 26px/1.1 var(--display);letter-spacing:.01em;text-wrap:balance}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 14px;font-weight:600;font-size:15px;min-height:42px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.quiet{background:transparent}
+.btn.danger{color:var(--down)}
+
+main{padding-block:14px 40px;display:flex;flex-direction:column;gap:16px}
+.summary{color:var(--muted);font-size:14px;margin:0}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:transparent;border-radius:999px;padding:7px 14px;font-size:14px;font-weight:500;white-space:nowrap}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+
+.group h2{margin:0 0 8px;font:600 15px/1 var(--display);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between}
+.rows{background:var(--surface);border-radius:14px;overflow:hidden}
+.row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;border-top:1px solid var(--line);background:transparent;padding:10px 12px 10px 10px}
+.row:first-child{border-top:0}
+.thumb{flex:none;width:60px;height:60px;border-radius:10px;background:var(--tile);overflow:hidden;display:block}
+.thumb img,.hero img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb svg{width:100%;height:100%;display:block}
+.row .name{flex:1;min-width:0;font-weight:600;font-size:16px;line-height:1.25;overflow-wrap:anywhere}
+.row .val{flex:none;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.kg{font:700 24px/1 var(--display);font-variant-numeric:tabular-nums}
+.kg small{font:500 13px/1 var(--body);color:var(--muted);margin-left:3px}
+.todo{font-size:13px;color:var(--accent);font-weight:600}
+.delta{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--muted)}
+.delta.up{color:var(--up)} .delta.down{color:var(--down)}
+
+/* machine illustrations */
+.ill .f{fill:none;stroke:var(--frame);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+.ill .b{fill:none;stroke:var(--ink);stroke-width:5.5;stroke-linecap:round;stroke-linejoin:round}
+.ill .hd{fill:var(--ink)}
+.ill .a{fill:none;stroke:var(--accent);stroke-width:6.5;stroke-linecap:round}
+.ill .t{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.ill .d{fill:var(--accent)}
+
+/* detail */
+.hero{position:relative;background:var(--tile);border-radius:16px;overflow:hidden;aspect-ratio:16/10;max-width:100%;display:grid;place-items:center}
+.hero svg{height:86%;width:auto;display:block}
+.hero .tag{position:absolute;left:10px;bottom:10px;background:var(--surface);color:var(--muted);font-size:12px;font-weight:600;border-radius:6px;padding:3px 8px}
+.photo-actions{display:flex;flex-wrap:wrap;gap:8px}
+.photo-actions label.btn{display:inline-flex;align-items:center}
+.card{background:var(--surface);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.card h3{margin:0;font:600 15px/1 var(--display);letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.stepper{display:flex;align-items:stretch;gap:10px}
+.stepper button{flex:none;width:58px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font:700 28px/1 var(--display)}
+.stepper .field{flex:1;min-width:0;display:flex;align-items:baseline;justify-content:center;gap:6px;border:2px solid var(--line);border-radius:12px;padding:6px 10px;background:var(--bg)}
+.stepper .field:focus-within{border-color:var(--accent)}
+.stepper input{width:100%;min-width:0;border:0;background:transparent;text-align:right;font:700 44px/1.1 var(--display);font-variant-numeric:tabular-nums;outline:none}
+.stepper .unit{font-weight:600;color:var(--muted);flex:none;padding-right:8px}
+.saveline{display:flex;gap:10px;flex-wrap:wrap}
+.saveline input[type=date]{flex:1;min-width:140px;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:8px 10px;min-height:46px}
+.saveline .btn{flex:2;min-width:150px;min-height:46px;font-size:16px}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);border-radius:10px;overflow:hidden}
+@media (min-width:520px){.stats{grid-template-columns:repeat(4,1fr)}}
+.stat{background:var(--surface);padding:10px 12px;display:flex;flex-direction:column;gap:4px}
+.stat span{font-size:12px;color:var(--muted);font-weight:500}
+.stat b{font:700 22px/1 var(--display);font-variant-numeric:tabular-nums}
+.stat b.up{color:var(--up)} .stat b.down{color:var(--down)}
+.chart{position:relative}
+.chart svg{display:block;width:100%;height:auto;touch-action:pan-y}
+.chart text{font:500 11px var(--body);fill:var(--muted);font-variant-numeric:tabular-nums}
+.chart .end{font:700 14px var(--display);fill:var(--ink)}
+.tip{position:absolute;top:0;pointer-events:none;background:var(--ink);color:var(--bg);border-radius:8px;padding:5px 9px;font-size:12px;white-space:nowrap;transform:translateX(-50%)}
+.tip b{font:700 16px/1 var(--display);display:block}
+.empty{color:var(--muted);font-size:14px;margin:0}
+.hist{list-style:none;margin:0;padding:0}
+.hist li{display:flex;align-items:center;gap:10px;border-top:1px solid var(--line);padding:6px 0;font-variant-numeric:tabular-nums}
+.hist li:first-child{border-top:0}
+.hist .dt{flex:1;color:var(--muted);font-size:14px}
+.hist .w{font-weight:600;min-width:72px;text-align:right}
+.hist .delta{min-width:62px;text-align:right}
+.hist button{border:0;background:transparent;color:var(--muted);width:36px;height:36px;border-radius:8px;font-size:18px}
+textarea,.txt,select{width:100%;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:10px;min-height:46px}
+textarea{min-height:70px;resize:vertical}
+
+dialog{border:0;border-radius:16px;background:var(--surface);color:var(--ink);padding:20px;width:min(440px,calc(100vw - 32px))}
+dialog::backdrop{background:rgba(8,12,16,.55)}
+dialog form,dialog .col{display:flex;flex-direction:column;gap:12px}
+dialog h2{margin:0;font:700 24px/1.1 var(--display)}
+dialog label{display:flex;flex-direction:column;gap:5px;font-size:14px;font-weight:500;color:var(--muted)}
+dialog p{margin:0;font-size:14px;color:var(--muted)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);border-radius:10px;padding:10px 14px;font-size:14px;font-weight:500;display:flex;gap:12px;align-items:center;z-index:20;max-width:calc(100vw - 32px)}
+.toast button{border:0;background:transparent;color:inherit;font-weight:700;text-decoration:underline;padding:0}
+</style>
+<!--/HEAD-->
+</head>
+<body>
+<!--BODY-->
+<div id="listView">
+  <header class="bar"><div class="wrap">
+    <h1>Trainingsgewichte</h1>
+    <button class="btn quiet" id="backupBtn" type="button">Sicherung</button>
+    <button class="btn primary" id="addBtn" type="button">+ Gerät</button>
+  </div></header>
+  <main class="wrap">
+    <p class="summary" id="summary"></p>
+    <div class="chips" id="chips" role="group" aria-label="Muskelgruppe"></div>
+    <div id="groups" style="display:flex;flex-direction:column;gap:18px"></div>
+  </main>
+</div>
+
+<div id="detailView" hidden>
+  <header class="bar"><div class="wrap">
+    <button class="btn quiet" id="backBtn" type="button" aria-label="Zurück zur Liste">‹ Zurück</button>
+    <h1 id="dName"></h1>
+  </div></header>
+  <main class="wrap">
+    <div class="hero" id="dHero"></div>
+    <div class="photo-actions">
+      <label class="btn" for="photoInput" id="photoLabel">Eigenes Foto aufnehmen</label>
+      <input id="photoInput" type="file" accept="image/*" hidden>
+      <button class="btn quiet" id="photoRemove" type="button" hidden>Foto entfernen</button>
+    </div>
+
+    <section class="card">
+      <h3>Aktuelles Trainingsgewicht</h3>
+      <div class="stepper">
+        <button type="button" id="minus" aria-label="2,5 kg weniger">−</button>
+        <div class="field"><input id="weight" inputmode="decimal" autocomplete="off" placeholder="0" aria-label="Gewicht in Kilogramm"><span class="unit">kg</span></div>
+        <button type="button" id="plus" aria-label="2,5 kg mehr">+</button>
+      </div>
+      <div class="saveline">
+        <input id="date" type="date" aria-label="Datum">
+        <button class="btn primary" id="save" type="button">Gewicht speichern</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>Statistik</h3>
+      <div class="stats" id="stats"></div>
+      <div class="chart" id="chart"></div>
+    </section>
+
+    <section class="card">
+      <h3>Verlauf</h3>
+      <ul class="hist" id="hist"></ul>
+    </section>
+
+    <section class="card">
+      <h3>Notiz</h3>
+      <textarea id="note" placeholder="z. B. Sitzhöhe 4, Lehne 2"></textarea>
+    </section>
+
+    <button class="btn quiet danger" id="delMachine" type="button">Gerät löschen</button>
+  </main>
+</div>
+
+<dialog id="addDlg">
+  <form id="addForm">
+    <h2>Gerät hinzufügen</h2>
+    <label>Name<input class="txt" id="newName" required maxlength="60" autocomplete="off"></label>
+    <label>Muskelgruppe<select id="newGroup"></select></label>
+    <div class="actions">
+      <button class="btn quiet" type="button" id="addCancel">Abbrechen</button>
+      <button class="btn primary" type="submit">Hinzufügen</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="backupDlg">
+  <div class="col">
+    <h2>Sicherung</h2>
+    <p>Deine Daten liegen nur in diesem Browser auf diesem Gerät. Kopiere die Sicherung ab und zu und lege sie z. B. in deinen Notizen ab. Zum Wiederherstellen den Text hier einfügen.</p>
+    <textarea id="backupText" aria-label="Sicherungstext" spellcheck="false"></textarea>
+    <label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="backupPhotos"> Fotos mitsichern (langer Text)</label>
+    <div class="actions">
+      <button class="btn quiet" type="button" id="backupClose">Schließen</button>
+      <button class="btn" type="button" id="backupRestore">Einspielen</button>
+      <button class="btn primary" type="button" id="backupCopy">Sicherung kopieren</button>
+    </div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" hidden role="status"><span id="toastMsg"></span><button type="button" id="toastUndo" hidden>Rückgängig</button></div>
+
+<script>
+(function(){
+'use strict';
+var $=function(id){return document.getElementById(id)};
+var KEY='tg-v1', PKEY='tg-photo-';
+var store={
+  get:function(k){try{return localStorage.getItem(k)}catch(e){return null}},
+  set:function(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}},
+  del:function(k){try{localStorage.removeItem(k)}catch(e){}}
+};
+
+/* ---------- illustrations ---------- */
+function chev(x,y,d){
+  var m={r:[-3,-4,1,0,-3,4],l:[3,-4,-1,0,3,4],u:[-4,3,0,-1,4,3],d:[-4,-3,0,1,4,-3]}[d];
+  return 'M'+(x+m[0])+' '+(y+m[1])+'L'+(x+m[2])+' '+(y+m[3])+'L'+(x+m[4])+' '+(y+m[5]);
+}
+var SEAT='M30 58L54 58M30 58L26 28M42 58L42 80M22 80L72 80', STACK='M8 40h10v40h-10zM8 50h10M8 60h10M8 70h10';
+var FSEAT='M36 62L60 62M48 62L48 84M32 84L64 84';
+var SIT='M34 30L36 54L56 54L56 78';
+var ILL={
+ legpress:{f:'M12 82L86 82M12 58L34 78M40 80L86 32',b:'M24 60L40 72L52 52L68 42',h:[18,50],a:'M64 28L78 50'},
+ legext:{f:SEAT+STACK,b:'M34 30L36 54L58 54L78 46',h:[34,21],d:[[82,44,5]]},
+ legcurl:{f:SEAT+STACK,b:'M34 30L36 54L58 54L52 74',h:[34,21],d:[[49,78,5]]},
+ hack:{f:'M16 84L62 12M52 84L86 72',b:'M52 30L42 54L62 58L68 76',h:[58,21],a:'M45 25L59 35'},
+ pendulum:{f:'M14 86L14 12L30 12M52 84L86 72',b:'M52 30L42 54L62 58L68 76',h:[58,21],a:'M30 12L48 28',d:[[30,12,4]]},
+ hipthrust:{f:'M10 82L88 82M8 52h14v30h-14z',b:'M24 50L52 44L70 52L70 80',h:[16,42],a:'M44 35L60 37'},
+ kickback:{f:'M10 84L88 84M74 36L74 84',b:'M58 36L38 46L40 82M38 46L22 58L10 50M56 38L74 44',h:[65,29],d:[[8,46,5]]},
+ abductor:{f:'M34 56L62 56M48 56L48 84M30 84L66 84',b:'M48 27L48 52L26 60L22 82M48 52L70 60L74 82',h:[48,18],a:'M16 52L16 70M80 52L80 70',t:chev(8,61,'l')+chev(88,61,'r')},
+ adductor:{f:'M34 56L62 56M48 56L48 84M30 84L66 84',b:'M48 27L48 52L26 60L22 82M48 52L70 60L74 82',h:[48,18],a:'M34 62L34 78M62 62L62 78',t:chev(41,70,'r')+chev(55,70,'l')},
+ calf:{f:'M82 10L82 86M82 29L64 29M36 82h24v5h-24z',b:'M48 32L48 74M42 80L54 74',h:[48,19],a:'M34 29L62 29',t:chev(20,46,'u')+'M20 46L20 60'},
+ chestpress:{f:SEAT+STACK+'M66 28L54 10',b:SIT+'M35 37L50 42L66 38',h:[34,21],a:'M66 28L66 48'},
+ incline:{f:SEAT+STACK+'M64 22L48 8',b:SIT+'M35 37L50 36L64 22',h:[34,21],a:'M58 14L70 30'},
+ butterfly:{f:FSEAT,b:'M48 28L48 58M48 34L30 38L27 22M48 34L66 38L69 22',h:[48,19],a:'M21 16L21 42M75 16L75 42',t:chev(11,29,'r')+chev(85,29,'l')},
+ reversefly:{f:FSEAT,b:'M48 28L48 58M48 34L26 32M48 34L70 32',h:[48,19],a:'M24 22L24 42M72 22L72 42',t:chev(13,32,'l')+chev(83,32,'r')},
+ latpull:{f:'M48 4L48 16M34 70L62 70M48 70L48 86M30 86L66 86',b:'M48 44L48 68M48 46L32 40L28 20M48 46L64 40L68 20',h:[48,34],a:'M18 22L26 16L70 16L78 22'},
+ row:{f:'M22 60L46 60M34 60L34 82M18 82L90 82M78 30h10v52h-10zM66 42L78 42M64 70L68 82',b:'M32 30L34 56L54 56L64 74M33 37L48 46L64 42',h:[31,21],a:'M64 34L64 50'},
+ highrow:{f:'M22 60L46 60M34 60L34 82M18 82L90 82M84 8L84 82M84 10L66 16',b:'M32 30L34 56L54 56L58 80M33 37L50 30L64 18',h:[31,21],a:'M59 11L70 23'},
+ pullover:{f:SEAT+STACK,b:SIT+'M34 36L46 22L44 8',h:[34,21],a:'M37 6L52 9',t:'M60 12A30 30 0 0 1 68 38'+chev(68,38,'d')},
+ backext:{f:'M10 84L88 84M30 84L44 54M58 84L44 54',b:'M66 30L44 50L22 74',h:[73,24],a:'M40 60L54 46',d:[[18,79,5]]},
+ assistpull:{f:'M14 8L14 86M82 8L82 86M14 10L82 10M56 72L56 86',b:'M48 40L48 64L62 66M48 40L34 30L32 12M48 40L62 30L64 12',h:[48,28],a:'M42 72L70 72',t:chev(27,50,'u')+'M27 50L27 62'},
+ shoulderpress:{f:'M36 66L60 66M48 66L48 86M32 86L64 86',b:'M48 42L48 64M48 44L32 42L28 22M48 44L64 42L68 22',h:[48,32],a:'M20 20L34 20M62 20L76 20',t:chev(27,9,'u')+chev(69,9,'u')},
+ lateral:{f:FSEAT,b:'M48 28L48 58M48 34L24 30M48 34L72 30',h:[48,19],a:'M20 20L20 38M76 20L76 38',t:chev(10,22,'u')+chev(86,22,'u')},
+ curl:{f:SEAT+STACK+'M44 52L62 42',b:SIT+'M35 37L56 41L62 26',h:[34,21],d:[[63,22,4.5]]},
+ tricepsext:{f:SEAT+STACK+'M44 52L62 42',b:SIT+'M35 37L56 41L72 46',h:[34,21],d:[[76,47,4.5]]},
+ dip:{f:SEAT+STACK,b:SIT+'M35 36L46 39L46 45',h:[34,21],a:'M40 47L54 47',t:chev(68,42,'d')+'M68 30L68 42'},
+ crunch:{f:SEAT+STACK,b:'M36 54L46 35M36 54L56 54L56 78M45 39L57 44',h:[50,26],a:'M55 30L61 42',t:'M66 22A22 22 0 0 1 72 44'+chev(72,44,'d')},
+ rotary:{f:FSEAT,b:'M48 28L48 58M48 34L32 40L40 48M48 34L64 40L56 48',h:[48,19],a:'M38 50L58 50',t:'M22 16A28 14 0 0 1 74 16'+chev(74,17,'d')},
+ cable:{f:'M70 8L70 86M56 86L84 86M70 10L52 10M64 34h12v40h-12z',b:'M24 40L24 64L18 84M24 64L30 84M24 44L40 45',h:[24,31],a:'M41 39L41 51',t:'M52 10L41 39'},
+ crossover:{f:'M10 8L10 86M86 8L86 86M10 10L86 10',b:'M48 30L48 60L40 84M48 60L56 84M48 36L32 52M48 36L64 52',h:[48,21],d:[[30,55,4.5],[66,55,4.5]],t:'M10 14L30 54M86 14L66 54'},
+ smith:{f:'M16 8L16 86M80 8L80 86M8 86L88 86',b:'M48 36L48 58L38 68L40 84M48 58L58 68L56 84',h:[48,26],a:'M22 34L74 34M9 26L9 42M87 26L87 42'}
+};
+function illSvg(key){
+  var i=ILL[key]||ILL.cable, s='<svg class="ill" viewBox="0 0 96 96" aria-hidden="true">';
+  s+='<path class="f" d="'+i.f+'"/>';
+  if(i.t)s+='<path class="t" d="'+i.t+'"/>';
+  s+='<path class="b" d="'+i.b+'"/><circle class="hd" cx="'+i.h[0]+'" cy="'+i.h[1]+'" r="6.5"/>';
+  if(i.a)s+='<path class="a" d="'+i.a+'"/>';
+  (i.d||[]).forEach(function(c){s+='<circle class="d" cx="'+c[0]+'" cy="'+c[1]+'" r="'+c[2]+'"/>'});
+  return s+'</svg>';
+}
+
+/* ---------- data ---------- */
+var GROUPS=['Beine','Po & Hüfte','Waden','Brust','Rücken','Schultern','Bizeps','Trizeps','Bauch','Mehrere Muskelgruppen'];
+var GROUP_ILL={'Beine':'legext','Po & Hüfte':'hipthrust','Waden':'calf','Brust':'chestpress','Rücken':'row','Schultern':'shoulderpress','Bizeps':'curl','Trizeps':'tricepsext','Bauch':'crunch','Mehrere Muskelgruppen':'cable'};
+var DEFAULTS=[
+ ['Beine','Beinpresse','legpress'],['Beine','Beinstrecker','legext'],['Beine','Beinbeuger (sitzend oder liegend)','legcurl'],
+ ['Beine','Hackenschmidt-Maschine','hack'],['Beine','Pendulum-Squat-Maschine','pendulum'],
+ ['Po & Hüfte','Hip-Thrust-Maschine','hipthrust'],['Po & Hüfte','Glute-Kickback-Maschine','kickback'],
+ ['Po & Hüfte','Abduktorenmaschine','abductor'],['Po & Hüfte','Adduktorenmaschine','adductor'],
+ ['Waden','Wadenhebemaschine (stehend oder sitzend)','calf'],
+ ['Brust','Brustpresse','chestpress'],['Brust','Schrägbank-Brustpresse','incline'],['Brust','Butterfly','butterfly'],
+ ['Rücken','Latzug','latpull'],['Rücken','Ruderzugmaschine','row'],['Rücken','High-Row-Maschine','highrow'],
+ ['Rücken','Pullover-Maschine','pullover'],['Rücken','Rückenstrecker-Maschine','backext'],['Rücken','Unterstützte Klimmzugmaschine','assistpull'],
+ ['Schultern','Schulterpresse','shoulderpress'],['Schultern','Seithebemaschine','lateral'],['Schultern','Reverse Butterfly','reversefly'],
+ ['Bizeps','Bizepscurl-Maschine','curl'],
+ ['Trizeps','Trizepsstrecker-Maschine','tricepsext'],['Trizeps','Dip-Maschine','dip'],
+ ['Bauch','Bauchpresse / Crunch-Maschine','crunch'],['Bauch','Rotary-Torso-Maschine','rotary'],
+ ['Mehrere Muskelgruppen','Kabelzugturm','cable'],['Mehrere Muskelgruppen','Doppelter Kabelzug / Cable Crossover','crossover'],
+ ['Mehrere Muskelgruppen','Multipresse / Smith Machine','smith']
+];
+function seed(){return {v:1,machines:DEFAULTS.map(function(d){return {id:d[2],name:d[1],group:d[0],ill:d[2],note:'',log:[]}})}}
+function valid(s){return s&&Array.isArray(s.machines)&&s.machines.every(function(m){return m&&typeof m.id==='string'&&typeof m.name==='string'&&Array.isArray(m.log)})}
+var state;
+try{state=JSON.parse(store.get(KEY))}catch(e){state=null}
+if(!valid(state))state=seed();
+var photos={};
+function photo(id){ if(!(id in photos))photos[id]=store.get(PKEY+id)||''; return photos[id]; }
+function persist(){ if(!store.set(KEY,JSON.stringify(state)))toast('Speichern nicht möglich. Der Browser-Speicher ist voll oder gesperrt.'); }
+
+/* ---------- helpers ---------- */
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function num(n){return n.toLocaleString('de-DE',{maximumFractionDigits:2})}
+function signed(n){return (n>0?'+':n<0?'−':'±')+num(Math.abs(n))}
+function today(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)}
+function fmtDate(iso,long){return new Date(iso+'T00:00').toLocaleDateString('de-DE',long?{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'}:{day:'2-digit',month:'2-digit',year:'2-digit'})}
+function deltaHtml(d){
+  if(d===null)return '';
+  var c=d>0?'up':d<0?'down':'';
+  return '<span class="delta '+c+'">'+(d>0?'▲ ':d<0?'▼ ':'')+signed(d)+' kg</span>';
+}
+var toastTimer,undoFn=null;
+function toast(msg,undo){
+  $('toastMsg').textContent=msg; undoFn=undo||null; $('toastUndo').hidden=!undo; $('toast').hidden=false;
+  clearTimeout(toastTimer); toastTimer=setTimeout(function(){$('toast').hidden=true},undo?6000:2600);
+}
+$('toastUndo').onclick=function(){ if(undoFn){undoFn();undoFn=null} $('toast').hidden=true; };
+
+/* ---------- list ---------- */
+var filter='Alle', cur=null, listScroll=0;
+function renderList(){
+  var withW=state.machines.filter(function(m){return m.log.length}), last='';
+  state.machines.forEach(function(m){m.log.forEach(function(e){if(e.d>last)last=e.d})});
+  $('summary').textContent=state.machines.length+' Geräte · '+withW.length+' mit Gewicht'+(last?' · letzter Eintrag '+fmtDate(last):'');
+  var used=GROUPS.filter(function(g){return state.machines.some(function(m){return m.group===g})});
+  if(filter!=='Alle'&&used.indexOf(filter)<0)filter='Alle';
+  $('chips').innerHTML=['Alle'].concat(used).map(function(g){
+    return '<button type="button" class="chip" aria-pressed="'+(g===filter)+'" data-g="'+esc(g)+'">'+esc(g)+'</button>'}).join('');
+  $('groups').innerHTML=used.filter(function(g){return filter==='Alle'||g===filter}).map(function(g){
+    var ms=state.machines.filter(function(m){return m.group===g});
+    return '<section class="group"><h2><span>'+esc(g)+'</span><span>'+ms.length+'</span></h2><div class="rows">'+ms.map(function(m){
+      var n=m.log.length, p=photo(m.id), val;
+      if(n){ val='<span class="kg">'+num(m.log[n-1].w)+'<small>kg</small></span>'+deltaHtml(n>1?m.log[n-1].w-m.log[n-2].w:null); }
+      else val='<span class="todo">Eintragen</span>';
+      return '<button type="button" class="row" data-id="'+esc(m.id)+'"><span class="thumb">'+(p?'<img alt="" src="'+p+'">':illSvg(m.ill))+'</span><span class="name">'+esc(m.name)+'</span><span class="val">'+val+'</span></button>';
+    }).join('')+'</div></section>';
+  }).join('');
+}
+$('chips').onclick=function(e){var b=e.target.closest('.chip'); if(b){filter=b.dataset.g;renderList()}};
+$('groups').onclick=function(e){var b=e.target.closest('.row'); if(b)openDetail(b.dataset.id)};
+
+/* ---------- detail ---------- */
+function machine(){return state.machines.filter(function(m){return m.id===cur})[0]}
+function openDetail(id){
+  listScroll=window.scrollY; cur=id; delArmed=false;
+  $('listView').hidden=true; $('detailView').hidden=false;
+  var m=machine(); $('date').value=today(); $('date').max=today();
+  $('weight').value=m.log.length?num(m.log[m.log.length-1].w):'';
+  $('note').value=m.note||''; $('delMachine').textContent='Gerät löschen';
+  renderDetail(); window.scrollTo(0,0);
+  try{location.hash='geraet'}catch(e){}
+}
+function showList(){
+  if(cur===null)return; cur=null;
+  $('detailView').hidden=true; $('listView').hidden=false; renderList(); window.scrollTo(0,listScroll);
+}
+$('backBtn').onclick=function(){ try{ if(location.hash)location.hash='' }catch(e){} showList(); };
+window.addEventListener('hashchange',function(){ if(location.hash!=='#geraet')showList(); });
+
+function renderDetail(){
+  var m=machine(); if(!m)return;
+  $('dName').textContent=m.name;
+  var p=photo(m.id);
+  $('dHero').innerHTML=(p?'<img alt="Foto: '+esc(m.name)+'" src="'+p+'">':illSvg(m.ill))+'<span class="tag">'+esc(m.group)+'</span>';
+  $('photoLabel').textContent=p?'Foto ersetzen':'Eigenes Foto aufnehmen'; $('photoRemove').hidden=!p;
+  var log=m.log,n=log.length;
+  if(n){
+    var first=log[0].w,last=log[n-1].w,best=Math.max.apply(null,log.map(function(e){return e.w})),ch=last-first;
+    var pct=first?Math.round(ch/first*100):0;
+    $('stats').innerHTML='<div class="stat"><span>Start</span><b>'+num(first)+' kg</b></div><div class="stat"><span>Aktuell</span><b>'+num(last)+' kg</b></div><div class="stat"><span>Bestwert</span><b>'+num(best)+' kg</b></div><div class="stat"><span>Veränderung</span><b class="'+(ch>0?'up':ch<0?'down':'')+'">'+signed(ch)+' kg'+(ch?' ('+signed(pct)+' %)':'')+'</b></div>';
+  } else $('stats').innerHTML='';
+  $('stats').hidden=!n;
+  drawChart($('chart'),log);
+  $('hist').innerHTML=n?log.slice().reverse().map(function(e,i){
+    var idx=n-1-i;
+    return '<li><span class="dt">'+fmtDate(e.d,true)+'</span><span class="w">'+num(e.w)+' kg</span>'+(idx>0?deltaHtml(e.w-log[idx-1].w):'<span class="delta">Start</span>')+'<button type="button" data-d="'+e.d+'" aria-label="Eintrag vom '+fmtDate(e.d)+' löschen">×</button></li>';
+  }).join(''):'<li><p class="empty">Noch kein Eintrag. Trage oben dein Gewicht ein.</p></li>';
+}
+function readWeight(){var v=parseFloat(String($('weight').value).replace(',','.'));return isFinite(v)?v:NaN}
+function step(d){var v=readWeight(); if(isNaN(v))v=0; v=Math.max(0,Math.round((v+d)*100)/100); $('weight').value=num(v)}
+$('minus').onclick=function(){step(-2.5)}; $('plus').onclick=function(){step(2.5)};
+$('save').onclick=function(){
+  var m=machine(),w=readWeight(),d=$('date').value||today();
+  if(isNaN(w)||w<=0||w>999){toast('Bitte ein Gewicht zwischen 0 und 999 kg eintragen.');return}
+  if(d>today())d=today();
+  w=Math.round(w*100)/100;
+  var ex=m.log.filter(function(e){return e.d===d})[0];
+  if(ex)ex.w=w; else {m.log.push({d:d,w:w}); m.log.sort(function(a,b){return a.d<b.d?-1:1})}
+  persist(); renderDetail(); toast('Gespeichert: '+num(w)+' kg am '+fmtDate(d));
+};
+$('hist').onclick=function(e){
+  var b=e.target.closest('button'); if(!b)return;
+  var m=machine(),i=m.log.findIndex(function(x){return x.d===b.dataset.d}); if(i<0)return;
+  var gone=m.log.splice(i,1)[0]; persist(); renderDetail();
+  toast('Eintrag gelöscht',function(){m.log.push(gone);m.log.sort(function(a,b){return a.d<b.d?-1:1});persist();if(cur===m.id)renderDetail();else renderList()});
+};
+$('note').oninput=function(){machine().note=this.value;persist()};
+var delArmed=false;
+$('delMachine').onclick=function(){
+  if(!delArmed){delArmed=true;this.textContent='Wirklich löschen? Nochmal tippen';return}
+  var m=machine(),i=state.machines.indexOf(m),p=photo(m.id);
+  state.machines.splice(i,1); store.del(PKEY+m.id); delete photos[m.id]; persist();
+  try{ if(location.hash)location.hash='' }catch(e){} showList();
+  toast('„'+m.name+'“ gelöscht',function(){state.machines.splice(i,0,m); if(p){store.set(PKEY+m.id,p);photos[m.id]=p} persist(); renderList()});
+};
+
+/* ---------- photo ---------- */
+$('photoInput').onchange=function(){
+  var f=this.files&&this.files[0], id=cur; this.value=''; if(!f)return;
+  var url=URL.createObjectURL(f), img=new Image();
+  img.onload=function(){
+    var s=Math.min(1,640/Math.max(img.width,img.height)),c=document.createElement('canvas');
+    c.width=Math.round(img.width*s); c.height=Math.round(img.height*s);
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height); URL.revokeObjectURL(url);
+    var data=c.toDataURL('image/jpeg',.72);
+    if(store.set(PKEY+id,data)){photos[id]=data; if(cur===id)renderDetail(); toast('Foto gespeichert')}
+    else toast('Foto konnte nicht gespeichert werden. Der Speicher ist voll.');
+  };
+  img.onerror=function(){URL.revokeObjectURL(url);toast('Dieses Bild kann nicht gelesen werden.')};
+  img.src=url;
+};
+$('photoRemove').onclick=function(){store.del(PKEY+cur);photos[cur]='';renderDetail()};
+
+/* ---------- chart ---------- */
+function drawChart(el,log){
+  if(!log.length){el.innerHTML='<p class="empty">Die Kurve erscheint mit dem ersten Eintrag.</p>';return}
+  var W=Math.max(280,el.clientWidth||340),H=190,L=38,R=22,T=26,B=24;
+  var ws=log.map(function(e){return e.w}),lo=Math.min.apply(null,ws),hi=Math.max.apply(null,ws),rng=hi-lo;
+  var st=[1,2.5,5,10,20,25,50,100,250].filter(function(s){return rng/s<=4})[0]||500;
+  var y0=Math.floor(lo/st)*st,y1=Math.ceil(hi/st)*st; if(y0===y1){y1+=st;y0=Math.max(0,y0-st)}
+  var ts=log.map(function(e){return Date.parse(e.d+'T00:00')}),t0=ts[0],t1=ts[ts.length-1];
+  var X=function(t){return t1===t0?(L+W-R)/2:L+(t-t0)/(t1-t0)*(W-L-R)},Y=function(w){return T+(y1-w)/(y1-y0)*(H-T-B)};
+  var pts=log.map(function(e,i){return [X(ts[i]),Y(e.w)]});
+  var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Gewichtsverlauf in Kilogramm">';
+  for(var v=y0;v<=y1+1e-9;v+=st)s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="var(--line)" stroke-width="1"/><text x="'+(L-7)+'" y="'+(Y(v)+4)+'" text-anchor="end">'+num(v)+'</text>';
+  var line=pts.map(function(p,i){return (i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)}).join('');
+  if(pts.length>1){
+    s+='<path d="'+line+'L'+pts[pts.length-1][0].toFixed(1)+' '+(H-B)+'L'+pts[0][0].toFixed(1)+' '+(H-B)+'Z" fill="var(--accent)" opacity=".12"/>';
+    s+='<path d="'+line+'" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+    s+='<text x="'+L+'" y="'+(H-6)+'">'+fmtDate(log[0].d)+'</text><text x="'+(W-R)+'" y="'+(H-6)+'" text-anchor="end">'+fmtDate(log[log.length-1].d)+'</text>';
+  } else s+='<text x="'+pts[0][0]+'" y="'+(H-6)+'" text-anchor="middle">'+fmtDate(log[0].d)+'</text>';
+  if(pts.length<=40)pts.slice(0,-1).forEach(function(p){s+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/>'});
+  var e=pts[pts.length-1];
+  s+='<circle cx="'+e[0]+'" cy="'+e[1]+'" r="5.5" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/>';
+  s+='<text class="end" x="'+Math.min(e[0],W-4)+'" y="'+(e[1]-11)+'" text-anchor="'+(pts.length>1?'end':'middle')+'">'+num(log[log.length-1].w)+' kg</text>';
+  s+='<g id="hov" visibility="hidden"><line id="hl" y1="'+T+'" y2="'+(H-B)+'" stroke="var(--muted)" stroke-width="1"/><circle id="hc" r="6.5" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/></g>';
+  s+='</svg><div class="tip" hidden></div>';
+  el.innerHTML=s;
+  var svg=el.querySelector('svg'),tip=el.querySelector('.tip'),hov=svg.querySelector('#hov');
+  function move(ev){
+    var r=svg.getBoundingClientRect(),k=W/r.width,x=(ev.clientX-r.left)*k,bi=0,bd=1e9;
+    pts.forEach(function(p,i){var d=Math.abs(p[0]-x);if(d<bd){bd=d;bi=i}});
+    var p=pts[bi]; hov.setAttribute('visibility','visible');
+    svg.querySelector('#hl').setAttribute('x1',p[0]); svg.querySelector('#hl').setAttribute('x2',p[0]);
+    svg.querySelector('#hc').setAttribute('cx',p[0]); svg.querySelector('#hc').setAttribute('cy',p[1]);
+    tip.innerHTML='<b>'+num(log[bi].w)+' kg</b>'+fmtDate(log[bi].d,true); tip.hidden=false;
+    var half=tip.offsetWidth/2; tip.style.left=Math.max(half,Math.min(r.width-half,p[0]/k))+'px';
+    tip.style.top=Math.max(0,p[1]/k-tip.offsetHeight-12)+'px';
+  }
+  function out(){hov.setAttribute('visibility','hidden');tip.hidden=true}
+  svg.addEventListener('pointermove',move); svg.addEventListener('pointerdown',move);
+  svg.addEventListener('pointerleave',out); svg.addEventListener('pointercancel',out);
+}
+var rz; window.addEventListener('resize',function(){clearTimeout(rz);rz=setTimeout(function(){if(cur!==null)drawChart($('chart'),machine().log)},150)});
+
+/* ---------- add machine ---------- */
+$('newGroup').innerHTML=GROUPS.map(function(g){return '<option>'+esc(g)+'</option>'}).join('');
+$('addBtn').onclick=function(){$('newName').value=''; if(filter!=='Alle')$('newGroup').value=filter; $('addDlg').showModal()};
+$('addCancel').onclick=function(){$('addDlg').close()};
+$('addForm').onsubmit=function(e){
+  e.preventDefault(); var name=$('newName').value.trim(),g=$('newGroup').value; if(!name)return;
+  state.machines.push({id:'m'+Date.now().toString(36),name:name,group:g,ill:GROUP_ILL[g]||'cable',note:'',log:[]});
+  persist(); $('addDlg').close(); renderList(); toast('„'+name+'“ hinzugefügt');
+};
+
+/* ---------- backup ---------- */
+function backupString(){
+  var o={app:'trainingsgewichte',v:1,machines:state.machines};
+  if($('backupPhotos').checked){o.photos={};state.machines.forEach(function(m){var p=photo(m.id);if(p)o.photos[m.id]=p})}
+  return JSON.stringify(o);
+}
+$('backupBtn').onclick=function(){$('backupPhotos').checked=false;$('backupText').value=backupString();$('backupDlg').showModal()};
+$('backupPhotos').onchange=function(){$('backupText').value=backupString()};
+$('backupClose').onclick=function(){$('backupDlg').close()};
+$('backupCopy').onclick=function(){
+  var t=$('backupText'); t.value=backupString();
+  function fallback(){t.focus();t.select();toast('Text ist markiert. Jetzt „Kopieren“ wählen.')}
+  try{navigator.clipboard.writeText(t.value).then(function(){toast('Sicherung kopiert')},fallback)}catch(e){fallback()}
+};
+var restoreArmed=false;
+$('backupText').oninput=function(){restoreArmed=false;$('backupRestore').textContent='Einspielen'};
+$('backupRestore').onclick=function(){
+  var o; try{o=JSON.parse($('backupText').value)}catch(e){o=null}
+  if(!valid(o)){toast('Das ist keine gültige Sicherung.');return}
+  if(!restoreArmed){restoreArmed=true;this.textContent='Aktuelle Daten ersetzen?';return}
+  restoreArmed=false; this.textContent='Einspielen';
+  state={v:1,machines:o.machines.map(function(m){return {id:m.id,name:m.name,group:GROUPS.indexOf(m.group)<0?GROUPS[9]:m.group,ill:m.ill,note:m.note||'',
+    log:m.log.filter(function(e){return e&&/^\d{4}-\d\d-\d\d$/.test(e.d)&&typeof e.w==='number'}).sort(function(a,b){return a.d<b.d?-1:1})}})};
+  if(o.photos)Object.keys(o.photos).forEach(function(id){if(/^data:image\//.test(o.photos[id])&&store.set(PKEY+id,o.photos[id]))photos[id]=o.photos[id]});
+  persist(); $('backupDlg').close(); renderList(); toast('Sicherung eingespielt');
+};
+
+/* ---------- start ---------- */
+try{ if(location.hash==='#geraet')history.replaceState(null,'',location.pathname+location.search) }catch(e){}
+renderList();
+if('serviceWorker' in navigator&&location.protocol==='https:'){try{navigator.serviceWorker.register('sw.js').catch(function(){})}catch(e){}}
+})();
+</script>
+<!--/BODY-->
+</body>
+</html>
