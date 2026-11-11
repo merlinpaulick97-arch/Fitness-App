@@ -48,6 +48,21 @@ header.bar h1{flex:1;min-width:0;margin:0;font:700 26px/1.1 var(--display);lette
 
 main{padding-block:14px 40px;display:flex;flex-direction:column;gap:16px}
 .summary{color:var(--muted);font-size:14px;margin:0}
+.panel{display:flex;flex-direction:column;gap:16px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:3px;background:var(--tile);border-radius:12px;padding:3px}
+.tabs button{border:0;background:transparent;border-radius:9px;padding:9px;font-weight:600;min-height:40px}
+.tabs button[aria-pressed="true"]{background:var(--surface)}
+.cal-head{display:flex;align-items:center;gap:8px}
+.cal-head h2{flex:1;margin:0;text-align:center;font:700 22px/1.1 var(--display)}
+.cal-head .btn{min-width:46px;font-size:20px;line-height:1;padding:6px 10px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal-wd{text-align:center;font-size:12px;font-weight:600;color:var(--muted);padding-bottom:2px}
+.day{aspect-ratio:1;min-width:0;padding:0;border:2px solid transparent;border-radius:10px;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-weight:500;font-variant-numeric:tabular-nums;line-height:1}
+.day small{font-size:10px;font-weight:600;opacity:.85}
+.day.has{background:var(--accent);color:var(--accent-ink);font-weight:700}
+.day.today{border-color:var(--frame);border-style:dashed}
+.day[aria-pressed="true"]{border-color:var(--ink);border-style:solid}
+.row .name small{display:block;font-weight:400;font-size:13px;color:var(--muted)}
 .chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
 .chip{flex:none;border:1px solid var(--line);background:transparent;border-radius:999px;padding:7px 14px;font-size:14px;font-weight:500;white-space:nowrap}
@@ -137,9 +152,25 @@ dialog p{margin:0;font-size:14px;color:var(--muted)}
     <button class="btn primary" id="addBtn" type="button">+ Gerät</button>
   </div></header>
   <main class="wrap">
-    <p class="summary" id="summary"></p>
-    <div class="chips" id="chips" role="group" aria-label="Muskelgruppe"></div>
-    <div id="groups" style="display:flex;flex-direction:column;gap:18px"></div>
+    <div class="tabs" role="group" aria-label="Ansicht">
+      <button type="button" id="tabList" aria-pressed="true">Geräte</button>
+      <button type="button" id="tabCal" aria-pressed="false">Kalender</button>
+    </div>
+    <div class="panel" id="listPanel">
+      <p class="summary" id="summary"></p>
+      <div class="chips" id="chips" role="group" aria-label="Muskelgruppe"></div>
+      <div id="groups" style="display:flex;flex-direction:column;gap:18px"></div>
+    </div>
+    <div class="panel" id="calPanel" hidden>
+      <div class="cal-head">
+        <button class="btn" type="button" id="calPrev" aria-label="Vorheriger Monat">‹</button>
+        <h2 id="calTitle"></h2>
+        <button class="btn" type="button" id="calNext" aria-label="Nächster Monat">›</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <p class="summary" id="calSummary"></p>
+      <section class="group"><h2><span id="calDayTitle"></span><span id="calDayCount"></span></h2><div id="calDay"></div></section>
+    </div>
   </main>
 </div>
 
@@ -343,7 +374,42 @@ function renderList(){
       return '<button type="button" class="row" data-id="'+esc(m.id)+'"><span class="thumb">'+(p?'<img alt="" src="'+p+'">':illSvg(m.ill))+'</span><span class="name">'+esc(m.name)+'</span><span class="val">'+val+'</span></button>';
     }).join('')+'</div></section>';
   }).join('');
+  renderCal();
 }
+
+/* ---------- calendar ---------- */
+var view='list', calSel=today(), calY=+calSel.slice(0,4), calM=+calSel.slice(5,7)-1;
+function iso(y,m,d){return y+'-'+('0'+(m+1)).slice(-2)+'-'+('0'+d).slice(-2)}
+function renderCal(){
+  var map={};
+  state.machines.forEach(function(m){m.log.forEach(function(e){(map[e.d]=map[e.d]||[]).push({m:m,w:e.w})})});
+  var first=new Date(calY,calM,1),off=(first.getDay()+6)%7,days=new Date(calY,calM+1,0).getDate(),td=today(),n=0;
+  $('calTitle').textContent=first.toLocaleDateString('de-DE',{month:'long',year:'numeric'});
+  var h=['Mo','Di','Mi','Do','Fr','Sa','So'].map(function(w){return '<div class="cal-wd">'+w+'</div>'}).join('');
+  for(var i=0;i<off;i++)h+='<span></span>';
+  for(var d=1;d<=days;d++){
+    var k=iso(calY,calM,d),c=(map[k]||[]).length; if(c)n++;
+    h+='<button type="button" class="day'+(c?' has':'')+(k===td?' today':'')+'" data-d="'+k+'" aria-pressed="'+(k===calSel)+'" aria-label="'+fmtDate(k,true)+(c?', '+c+(c===1?' Übung':' Übungen'):', kein Training')+'">'+d+(c?'<small>'+c+'</small>':'')+'</button>';
+  }
+  $('calGrid').innerHTML=h;
+  $('calSummary').textContent=n?n+(n===1?' Trainingstag':' Trainingstage')+' in diesem Monat. Die kleine Zahl zeigt die Übungen am Tag.':'Kein Training in diesem Monat eingetragen.';
+  var list=(map[calSel]||[]).slice().sort(function(a,b){return GROUPS.indexOf(a.m.group)-GROUPS.indexOf(b.m.group)});
+  $('calDayTitle').textContent=fmtDate(calSel,true)+(calSel===td?' · heute':'');
+  $('calDayCount').textContent=list.length||'';
+  $('calDay').innerHTML=list.length?'<div class="rows">'+list.map(function(x){
+    var p=photo(x.m.id);
+    return '<button type="button" class="row" data-id="'+esc(x.m.id)+'"><span class="thumb">'+(p?'<img alt="" src="'+p+'">':illSvg(x.m.ill))+'</span><span class="name">'+esc(x.m.name)+'<small>'+esc(x.m.group)+'</small></span><span class="val"><span class="kg">'+num(x.w)+'<small>kg</small></span></span></button>';
+  }).join('')+'</div>':'<p class="empty">An diesem Tag ist keine Übung eingetragen.</p>';
+}
+function setView(v){
+  view=v; $('listPanel').hidden=v!=='list'; $('calPanel').hidden=v!=='cal';
+  $('tabList').setAttribute('aria-pressed',v==='list'); $('tabCal').setAttribute('aria-pressed',v==='cal');
+}
+$('tabList').onclick=function(){setView('list')}; $('tabCal').onclick=function(){setView('cal')};
+function calShift(d){calM+=d; if(calM<0){calM=11;calY--} if(calM>11){calM=0;calY++} renderCal()}
+$('calPrev').onclick=function(){calShift(-1)}; $('calNext').onclick=function(){calShift(1)};
+$('calGrid').onclick=function(e){var b=e.target.closest('.day'); if(b){calSel=b.dataset.d;renderCal()}};
+$('calDay').onclick=function(e){var b=e.target.closest('.row'); if(b)openDetail(b.dataset.id)};
 $('chips').onclick=function(e){var b=e.target.closest('.chip'); if(b){filter=b.dataset.g;renderList()}};
 $('groups').onclick=function(e){var b=e.target.closest('.row'); if(b)openDetail(b.dataset.id)};
 
